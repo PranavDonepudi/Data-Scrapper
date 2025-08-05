@@ -88,36 +88,39 @@ DataScraper Pro is a full-stack web application that enables efficient data coll
 
 ## 🚀 Quick Start
 
-### **1. Clone Repository**
+### **Option 1: Replit (Recommended)**
+1. Fork this Replit project
+2. The environment is pre-configured with all dependencies
+3. Click "Run" to start the application
+4. Access at the provided Replit URL
+
+### **Option 2: Local Development**
+For detailed local setup instructions, see **[LOCAL_SETUP.md](LOCAL_SETUP.md)**
+
+**Quick Local Setup:**
 ```bash
+# 1. Clone repository
 git clone https://github.com/yourusername/datascraper-pro.git
 cd datascraper-pro
-```
 
-### **2. Install Dependencies**
-```bash
+# 2. Install dependencies
 npm install
-```
 
-### **3. Environment Setup**
-Create a `.env` file with your database connection:
-```env
-DATABASE_URL="postgresql://username:password@hostname:port/database"
-```
+# 3. Setup environment
+cp .env.example .env
+# Edit .env with your PostgreSQL connection string
 
-### **4. Database Setup**
-```bash
-# Push schema to database
+# 4. Setup database
 npm run db:push
 
-# Optional: View database in Drizzle Studio
-npm run db:studio
-```
-
-### **5. Start Development Server**
-```bash
+# 5. Start development server
 npm run dev
 ```
+
+**Requirements for Local Development:**
+- Node.js 20+
+- PostgreSQL database
+- VS Code (recommended)
 
 The application will be available at `http://localhost:5000`
 
