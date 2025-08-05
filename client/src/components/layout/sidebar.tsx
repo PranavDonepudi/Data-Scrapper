@@ -34,9 +34,9 @@ export function Sidebar() {
             return (
               <li key={item.name}>
                 <Link href={item.href}>
-                  <a
+                  <div
                     className={cn(
-                      "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors",
+                      "flex items-center space-x-3 px-3 py-2 rounded-lg transition-colors cursor-pointer",
                       isActive
                         ? "bg-primary text-white"
                         : "text-gray-600 hover:bg-gray-100"
@@ -44,7 +44,7 @@ export function Sidebar() {
                   >
                     <item.icon size={20} />
                     <span>{item.name}</span>
-                  </a>
+                  </div>
                 </Link>
               </li>
             );
