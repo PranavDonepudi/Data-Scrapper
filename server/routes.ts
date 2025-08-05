@@ -240,7 +240,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const post = await storage.createSocialMediaPost(validatedData);
       res.status(201).json(post);
     } catch (error) {
-      res.status(400).json({ error: "Invalid social media post data" });
+      console.error("Social media post validation error:", error);
+      res.status(400).json({ 
+        error: "Invalid social media post data", 
+        details: error instanceof Error ? error.message : "Unknown error" 
+      });
     }
   });
 
