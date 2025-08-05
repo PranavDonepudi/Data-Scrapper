@@ -2,6 +2,7 @@ import puppeteer, { Browser, Page } from 'puppeteer';
 import * as cheerio from 'cheerio';
 import { storage } from '../storage';
 import { type Scraper, type InsertScrapedData } from '@shared/schema';
+import fetch from 'node-fetch';
 
 export class ScraperService {
   private browser: Browser | null = null;
@@ -10,7 +11,19 @@ export class ScraperService {
     if (!this.browser) {
       this.browser = await puppeteer.launch({
         headless: true,
-        args: ['--no-sandbox', '--disable-setuid-sandbox']
+        executablePath: '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-gpu',
+          '--disable-background-timer-throttling',
+          '--disable-backgrounding-occluded-windows',
+          '--disable-renderer-backgrounding'
+        ]
       });
     }
     return this.browser;
@@ -24,6 +37,16 @@ export class ScraperService {
   }
 
   async scrapePage(scraper: Scraper, url: string): Promise<any> {
+    // Try Puppeteer first, fallback to simple HTTP scraping
+    try {
+      return await this.scrapeWithPuppeteer(scraper, url);
+    } catch (puppeteerError) {
+      console.log('Puppeteer failed, trying HTTP fallback:', puppeteerError.message);
+      return await this.scrapeWithHttp(scraper, url);
+    }
+  }
+
+  async scrapeWithPuppeteer(scraper: Scraper, url: string): Promise<any> {
     const browser = await this.initBrowser();
     const page = await browser.newPage();
 
@@ -40,30 +63,48 @@ export class ScraperService {
       // Get page content
       const content = await page.content();
       
-      // Parse with Cheerio
-      const $ = cheerio.load(content);
-      
-      // Extract data based on selectors
-      const extractedData: any = {};
-      const selectors = scraper.selectors as any;
-      
-      for (const [fieldName, selector] of Object.entries(selectors)) {
-        if (typeof selector === 'string') {
-          const element = $(selector);
-          if (element.length > 1) {
-            // Multiple elements - return array
-            extractedData[fieldName] = element.map((i, el) => $(el).text().trim()).get();
-          } else {
-            // Single element
-            extractedData[fieldName] = element.text().trim();
-          }
-        }
-      }
-      
-      return extractedData;
+      return this.extractDataFromHtml(content, scraper.selectors as any);
     } finally {
       await page.close();
     }
+  }
+
+  async scrapeWithHttp(scraper: Scraper, url: string): Promise<any> {
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    const content = await response.text();
+    return this.extractDataFromHtml(content, scraper.selectors as any);
+  }
+
+  private extractDataFromHtml(content: string, selectors: any): any {
+    // Parse with Cheerio
+    const $ = cheerio.load(content);
+    
+    // Extract data based on selectors
+    const extractedData: any = {};
+    
+    for (const [fieldName, selector] of Object.entries(selectors)) {
+      if (typeof selector === 'string') {
+        const element = $(selector);
+        if (element.length > 1) {
+          // Multiple elements - return array
+          extractedData[fieldName] = element.map((i, el) => $(el).text().trim()).get();
+        } else {
+          // Single element
+          extractedData[fieldName] = element.text().trim();
+        }
+      }
+    }
+    
+    return extractedData;
   }
 
   async runScraper(scraperId: string): Promise<void> {
